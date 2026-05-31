@@ -10,11 +10,22 @@ services:
       - ../mlruns:/app/mlruns
     environment:
       - MLFLOW_TRACKING_URI=/app/mlruns
+      - PYTHONUNBUFFERED=1
+    command: >
+      sh -c "if [ ! -f data/processed/best_model.pkl ]; then
+        echo 'No se encontro best_model.pkl; generando datos, ETL y entrenamiento inicial...';
+        python src/generate_data.py &&
+        python src/etl.py &&
+        python src/train.py &&
+        python src/select_best.py;
+      fi;
+      uvicorn api.router:app --host 0.0.0.0 --port 8000"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=5)"]
       interval: 10s
       timeout: 5s
-      retries: 3
+      retries: 12
+      start_period: 90s
 
   app:
     build:
@@ -23,22 +34,27 @@ services:
     ports:
       - "8501:8501"
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     environment:
       - API_URL=http://api:8000
+      - STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
 
   mlflow:
-    image: ghcr.io/mlflow/mlflow:v2.8.0
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.mlflow
     ports:
       - "5000:5000"
     volumes:
       - ../mlruns:/mlruns
     command: mlflow server --host 0.0.0.0 --port 5000 --backend-store-uri /mlruns
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health', timeout=5)"]
       interval: 15s
       timeout: 5s
-      retries: 3
+      retries: 8
+      start_period: 30s
 
   prometheus:
     image: prom/prometheus:latest
@@ -47,7 +63,8 @@ services:
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
     depends_on:
-      - api
+      api:
+        condition: service_healthy
 
   grafana:
     image: grafana/grafana:latest
