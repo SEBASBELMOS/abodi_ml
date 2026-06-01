@@ -911,7 +911,7 @@ with tab_health:
 
     st.markdown("#### Limites por plan")
     limits_df = pd.DataFrame(
-        [{"Plan": plan, "Limite de procesos": limit} for plan, limit in PLAN_LIMITS.items()]
+        [{"Plan": plan, "Limite de procesos": str(limit)} for plan, limit in PLAN_LIMITS.items()]
     )
     st.dataframe(limits_df, hide_index=True, use_container_width=True)
 
