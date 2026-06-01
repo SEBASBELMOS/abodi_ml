@@ -28,9 +28,12 @@ Usuario → Streamlit App → FastAPI API → Modelo XGBoost → Predicción + S
 ## Instalación
 
 ```bash
-cd ml_module
+# Desde la raíz del repo (requirements.txt está en la raíz)
 pip install -r requirements.txt
+cd ml_module
 ```
+
+> Los comandos de la sección siguiente se ejecutan desde `ml_module/`.
 
 ## Uso Paso a Paso
 
@@ -125,51 +128,64 @@ GitHub Actions corre automáticamente en cada push a main:
 6. Linting con ruff
 7. Build de imágenes Docker
 
-## KPIs del Modelo
+## Resultados
 
-| Métrica | Objetivo |
-| :--- | :--- |
-| Accuracy | ≥ 0.85 |
-| Precision | ≥ 0.80 |
-| Recall | ≥ 0.80 |
-| F1-Score | ≥ 0.85 |
-| AUC-ROC | ≥ 0.90 |
+**Modelo ganador:** ADASYN + XGBoost regularizado (`max_depth=3`, `n_estimators=150`, `lr=0.01`, `reg_lambda=2`, `reg_alpha=1`), seleccionado por mayor F1-Score entre los 3 experimentos.
+
+| Métrica | Objetivo | Obtenido | Estado |
+| :--- | :---: | :---: | :---: |
+| Accuracy | ≥ 0.85 | 0.9100 | ✅ |
+| Precision | ≥ 0.80 | 0.9158 | ✅ |
+| Recall | ≥ 0.80 | 0.8630 | ✅ |
+| F1-Score | ≥ 0.85 | 0.8886 | ✅ |
+| AUC-ROC | ≥ 0.90 | 0.9126 | ✅ |
+
+El modelo supera todos los objetivos. Las métricas se calculan sobre el conjunto de test (split 80/20 estratificado) y quedan registradas en MLflow.
 
 ## Integración con Backend Abodi
 
-Los endpoints de la API (`api/router.py`) están diseñados para importarse directamente desde el backend existente de Abodi:
+La API (`api/router.py`) expone una aplicación FastAPI (`app`) lista para integrarse con el backend existente de Abodi de dos formas:
 
 ```python
+# Opción A (recomendada): correr el módulo como microservicio independiente
+#   y consumirlo por HTTP desde el backend (POST http://ml:8000/predict/risk)
+
+# Opción B: montar la app del modelo como sub-aplicación del backend
 # backend/main.py
-from ml_module.api.router import router as ml_router
-app.include_router(ml_router, prefix="/ml")
+from ml_module.api.router import app as ml_app
+main_app.mount("/ml", ml_app)
 ```
 
 ## Estructura del Módulo
 
 ```
-ml_module/
-├── api/               # FastAPI endpoints
-│   ├── router.py      # Endpoints de inferencia
-│   └── schemas.py     # Modelos Pydantic
-├── app/               # Streamlit (demo)
-│   └── streamlit_app.py
-├── data/              # Datos sintéticos
-│   ├── raw/           # Datos generados
-│   └── processed/     # Datos transformados + modelo
-├── src/               # Scripts de entrenamiento
-│   ├── generate_data.py
-│   ├── etl.py
-│   ├── train.py
-│   └── select_best.py
-├── tests/             # Tests unitarios
-│   ├── test_model.py
-│   └── test_api.py
-├── docker/            # Contenedores
-│   ├── Dockerfile.api
-│   ├── Dockerfile.app
-│   └── docker-compose.yml
-├── .github/workflows/ # CI/CD
-├── requirements.txt
-└── README.md
+abodi_ml/                  # raíz del repo
+├── README.md
+├── requirements.txt       # dependencias del módulo ML
+├── docs/                  # documentación del proyecto
+└── ml_module/
+    ├── api/               # FastAPI
+    │   ├── router.py      # App FastAPI con los endpoints de inferencia
+    │   └── schemas.py     # Modelos Pydantic
+    ├── app/               # Streamlit (demo)
+    │   └── streamlit_app.py
+    ├── data/              # Datos sintéticos
+    │   ├── raw/           # Datos generados
+    │   └── processed/     # Datos transformados + modelo
+    ├── src/               # Scripts de entrenamiento
+    │   ├── generate_data.py
+    │   ├── etl.py
+    │   ├── train.py
+    │   └── select_best.py
+    ├── tests/             # Tests unitarios
+    │   ├── test_model.py
+    │   └── test_api.py
+    ├── docker/            # Contenedores
+    │   ├── Dockerfile.api
+    │   ├── Dockerfile.app
+    │   ├── Dockerfile.mlflow
+    │   ├── prometheus.yml
+    │   └── docker-compose.yml
+    ├── mlruns/            # Tracking local de MLflow (generado)
+    └── .github/workflows/ # CI/CD (ci.yml)
 ```
