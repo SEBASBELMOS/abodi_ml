@@ -22,7 +22,6 @@ feature_cols = None
 scaler = None
 num_idx = None
 metadata = None
-plazo_map = None
 despacho_order = None
 
 prediction_counter = Counter("predictions_total", "Total de predicciones realizadas")
@@ -31,7 +30,7 @@ latency_histogram = Histogram("prediction_latency_seconds", "Latencia de predicc
                                buckets=[0.01, 0.05, 0.1, 0.25, 0.5, 1.0, 2.0])
 
 def load_model():
-    global model, feature_cols, scaler, num_idx, metadata, plazo_map, despacho_order
+    global model, feature_cols, scaler, num_idx, metadata, despacho_order
     try:
         model_path = PROCESSED_PATH / "best_model.pkl"
         if model_path.exists():
@@ -45,7 +44,6 @@ def load_model():
         feature_cols = joblib.load(PROCESSED_PATH / "feature_cols.pkl")
         scaler = joblib.load(PROCESSED_PATH / "scaler.pkl")
         num_idx = joblib.load(PROCESSED_PATH / "num_idx.pkl")
-        plazo_map = joblib.load(PROCESSED_PATH / "plazo_map.pkl")
         despacho_order = joblib.load(PROCESSED_PATH / "despacho_order.pkl")
 
         meta_path = PROCESSED_PATH / "metadata.json"
@@ -73,11 +71,11 @@ PLAN_LIMITS = {
 plt_map = {
     "Auto admisorio demanda": 14,
     "Traslado excepciones": 14,
-    "Traslado recurso": 7,
+    "Traslado recurso": 8,
     "Sentencia primera instancia": 14,
-    "Notificación por estado": 4,
+    "Notificación por estado": 5,
     "Auto de pruebas": 14,
-    "Fijación audiencia": 7,
+    "Fijación audiencia": 8,
     "Providencia interlocutoria": 0,
     "Constancia secretarial": 0,
     "Oficio comisorio": 0,

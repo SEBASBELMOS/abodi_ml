@@ -109,6 +109,7 @@ for _ in range(N_SAMPLES):
         "frecuencia_actualizaciones": frecuencia,
         "tiene_termino_legal": 1 if tiene_termino else 0,
         "plan_suscripcion": plan,
+        "plazo_dias_calendario": plazo_dias_calendario,
         "riesgo_vencimiento": riesgo,
     })
 

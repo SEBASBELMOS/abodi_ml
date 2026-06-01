@@ -18,18 +18,10 @@ cat_features = ["tipo_proceso", "tipo_ultima_actuacion", "ciudad", "despacho", "
 num_features = ["dias_sin_actividad", "num_partes", "total_actuaciones",
                 "frecuencia_actualizaciones", "tiene_termino_legal"]
 
-# Feature engineering: pct de plazo consumido (proxy)
-# no tenemos el plazo real por fila, así que creamos uno basado en reglas
-plazo_map = {
-    "Auto admisorio demanda": 14, "Traslado excepciones": 14, "Traslado recurso": 7,
-    "Sentencia primera instancia": 14, "Notificación por estado": 4, "Auto de pruebas": 14,
-    "Fijación audiencia": 7, "Providencia interlocutoria": 0,
-    "Constancia secretarial": 0, "Oficio comisorio": 0,
-}
-df["plazo_calendario"] = df["tipo_ultima_actuacion"].map(plazo_map)
+# Feature engineering: pct de plazo consumido (usando el plazo real generado)
 df["pct_plazo_consumido"] = np.where(
-    df["plazo_calendario"] > 0,
-    df["dias_sin_actividad"] / df["plazo_calendario"],
+    df["plazo_dias_calendario"] > 0,
+    df["dias_sin_actividad"] / df["plazo_dias_calendario"],
     0
 )
 df["pct_plazo_consumido"] = df["pct_plazo_consumido"].clip(0, 5)
@@ -51,7 +43,7 @@ df_encoded = pd.get_dummies(df, columns=["tipo_proceso", "ciudad", "plan_suscrip
                                           "tipo_ultima_actuacion"], drop_first=True)
 
 # Drop original columns
-drop_cols = ["despacho", "plazo_calendario"]
+drop_cols = ["despacho", "plazo_dias_calendario"]
 feature_cols = [c for c in df_encoded.columns if c not in drop_cols + ["riesgo_vencimiento"]]
 
 X = df_encoded[feature_cols].values.astype(np.float64)
@@ -78,7 +70,6 @@ X_train, X_test, y_train, y_test = train_test_split(
 joblib.dump(scaler, PROCESSED_PATH / "scaler.pkl")
 joblib.dump(feature_cols, PROCESSED_PATH / "feature_cols.pkl")
 joblib.dump(despacho_order, PROCESSED_PATH / "despacho_order.pkl")
-joblib.dump(plazo_map, PROCESSED_PATH / "plazo_map.pkl")
 joblib.dump(num_idx, PROCESSED_PATH / "num_idx.pkl")
 
 np.save(PROCESSED_PATH / "X_train.npy", X_train)
