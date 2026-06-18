@@ -12,12 +12,16 @@ Clasificador binario (XGBoost) que, dado un proceso judicial, predice si existe 
 
 ## Arquitectura
 
-```
-Usuario → Streamlit App → FastAPI API → Modelo XGBoost → Predicción + SHAP
-                ↓                                            ↓
-         Dashboard Salud                              MLflow Tracking
-                ↓                                            ↓
-          Grafana/Prometheus                        Model Registry
+```mermaid
+flowchart TD
+    U[Usuario] --> ST[Streamlit App]
+    ST --> API[FastAPI]
+    API --> M["Modelo XGBoost + SHAP"]
+    M --> P[Predicción de riesgo]
+    TR["3 experimentos de entrenamiento"] --> ML["MLflow: tracking + Model Registry"]
+    ML --> M
+    API --> PR[Prometheus]
+    PR --> GR[Grafana]
 ```
 
 ## Requisitos
